@@ -67,7 +67,7 @@ Open it on Arbiscan. Notice the input data is a ciphertext blob. You cannot read
 
 ---
 
-## Full case study: question 3
+## example : question 3
 
 Live page: https://veritas-fhenix.vercel.app/question/3
 
