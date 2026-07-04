@@ -67,6 +67,108 @@ Open it on Arbiscan. Notice the input data is a ciphertext blob. You cannot read
 
 ---
 
+## Full case study: question 3
+
+Live page: https://veritas-fhenix.vercel.app/question/3
+
+Question asked: "will portgal win fifa worldcup ?"
+
+This is a complete walkthrough of every step from question to decrypted result, with every transaction linked.
+
+### Research pipeline (what each agent does)
+
+Every agent runs the same 7 stage pipeline. The orchestrator dispatches 4 agents in parallel, then Synthesis Epsilon runs last and sees the other 4 verdict hashes before deciding.
+
+1. **Query expansion** — the question is rewritten into 3 to 5 search friendly subqueries (Tavily search API)
+2. **Web retrieval** — Tavily returns ranked snippets from betting sites, Wikipedia, Opta Analyst, news outlets
+3. **Evidence extraction** — each snippet is parsed for numeric signals: odds, base rates, historical finishes, squad ratings
+4. **Bayesian update** — the agent merges its prior (personality driven) with the evidence to form a posterior
+5. **Verdict** — outputs YES, NO, or UNSURE plus a confidence between 0 and 99
+6. **CoFHE encryption** — the backend takes the verdict and confidence and encrypts both with `@cofhe/sdk` before any chain call
+7. **On chain submit** — `submitVote(qid, encVote, encConfidence)` is sent to VeritasOracle.sol
+
+Source: [backend/src/agents/agent.ts](backend/src/agents/agent.ts) and [backend/src/cofhe.ts](backend/src/cofhe.ts)
+
+### The 5 encrypted votes (all real, all on chain)
+
+| Agent | Verdict | Confidence | ReasonHash | Encrypted vote tx on Arbiscan |
+|---|---|---|---|---|
+| Oracle Alpha | YES | 70 | 0x6e8c0fc7... | [0x2f0674c6...](https://sepolia.arbiscan.io/tx/0x2f0674c637073ced5ae764f44acb894f3a4a944ffcc2261faeebfe52fc6dd486) |
+| Skeptic Beta | NO | 85 | 0x110bc471... | [0xe56da5cb...](https://sepolia.arbiscan.io/tx/0xe56da5cb7e1f73b7e186b98293e66da95a86100433c5a26b3498d945baf1f208) |
+| Signal Gamma | NO | 75 | 0x70908e4a... | [0xaed037b5...](https://sepolia.arbiscan.io/tx/0xaed037b5cf12d5d018c8c32defe5749992dc56fd86ab4b10638683e07647bd8b) |
+| Risk Delta | UNSURE | 30 | 0xb0a27989... | [0xe4794293...](https://sepolia.arbiscan.io/tx/0xe47942935ffe5327da7fcbde2c6846db7decb309edde48e9a1ef6f0b5686c065) |
+| Synthesis Epsilon | NO | 78 | 0x64fe86d9... | [0xffa5dd74...](https://sepolia.arbiscan.io/tx/0xffa5dd7417dc4706f66d280994a260a3476930530e406f87c1393461849e9c01) |
+
+Open any of those transaction links. The input data is a ciphertext blob. You can see the sender (the agent wallet) and the target (the VeritasOracle contract), but you cannot read what the agent voted. That is CoFHE doing its job.
+
+Agent wallets for reference (all 5 funded on Arbitrum Sepolia):
+* Oracle Alpha: [0x3762c18E92Ab1582d69234908b00D48898ae3fC3](https://sepolia.arbiscan.io/address/0x3762c18E92Ab1582d69234908b00D48898ae3fC3)
+* Skeptic Beta: [0x07d470c5089aD516c89FC86Ebab42871982cb3e6](https://sepolia.arbiscan.io/address/0x07d470c5089aD516c89FC86Ebab42871982cb3e6)
+* Signal Gamma: [0x54Be9E53F2a5cAbF64Ee06D1B8bD1A73678b55F8](https://sepolia.arbiscan.io/address/0x54Be9E53F2a5cAbF64Ee06D1B8bD1A73678b55F8)
+* Risk Delta: [0xA1840D3e49b2cEeB6028cF98369262B0bfe0c781](https://sepolia.arbiscan.io/address/0xA1840D3e49b2cEeB6028cF98369262B0bfe0c781)
+* Synthesis Epsilon: [0x514c37EC2eC5e7fBf5d7d8d1895D80B531F365F9](https://sepolia.arbiscan.io/address/0x514c37EC2eC5e7fBf5d7d8d1895D80B531F365F9)
+
+### What the contract computed while votes stayed encrypted
+
+For each of the 5 votes, the contract ran this sequence inside `submitVote` (no decryption anywhere):
+
+```solidity
+euint8 vote = FHE.asEuint8(_encVote);            // load encrypted vote
+euint8 confidence = FHE.asEuint8(_encConfidence); // load encrypted confidence
+ebool isYes = FHE.eq(vote, YES_CONST);           // is this a YES?
+ebool isNo  = FHE.eq(vote, NO_CONST);            // is this a NO?
+euint8 yesContrib = FHE.select(isYes, confidence, ZERO8); // confidence if YES else 0
+euint8 noContrib  = FHE.select(isNo,  confidence, ZERO8); // confidence if NO else 0
+yesScore[qid] = FHE.add(yesScore[qid], FHE.asEuint16(yesContrib));
+noScore[qid]  = FHE.add(noScore[qid],  FHE.asEuint16(noContrib));
+```
+
+That is 6 FHE operations per agent, 30 for the full question. Source: [VeritasOracle.sol submitVote function](contracts/src/VeritasOracle.sol)
+
+### The decrypt and publish transaction
+
+After all 5 votes are in, the backend triggers resolution. The contract calls `FHE.allowPublic` on both score ciphertexts. The backend fetches the plaintext via CoFHE SDK offchain, then publishes it on chain in one final transaction.
+
+**The decrypt and publish tx for question 3:**
+[0x4252ebc8ad3716fa869ae7cbb3168ad4c1b90cbc2b90f020612a6f42bfd87fc2](https://sepolia.arbiscan.io/tx/0x4252ebc8ad3716fa869ae7cbb3168ad4c1b90cbc2b90f020612a6f42bfd87fc2)
+
+Final decrypted aggregate (written on chain by that tx):
+* YES score = 70 (only Oracle Alpha contributed, confidence 70)
+* NO score = 238 (Skeptic 85 + Signal 75 + Synthesis 78 = 238)
+* Result = NO
+* Risk Delta voted UNSURE so its confidence added to neither score
+
+This matches the math: individual votes stayed encrypted the entire time, the contract did the addition homomorphically, and only the aggregate was revealed at the end.
+
+### Reputation updates (transparent, written on chain by same tx)
+
+| Agent | Delta | New reputation |
+|---|---|---|
+| Oracle Alpha (wrong) | -30 | 910 |
+| Skeptic Beta (right) | +50 | 1150 |
+| Signal Gamma (right) | +50 | 1150 |
+| Risk Delta (UNSURE) | 0 | 1000 |
+| Synthesis Epsilon (right) | +50 | 1150 |
+
+Reputation deltas are transparent because they only depend on the aggregate result, not on individual votes. The contract never needed to decrypt a single vote to compute these.
+
+### The full timeline
+
+* Question submitted to chain at 14:33:44 UTC
+* 4 agents started in parallel at 14:34:41 UTC (block 284068860)
+* Oracle Alpha vote confirmed: [0x2f0674c6...](https://sepolia.arbiscan.io/tx/0x2f0674c637073ced5ae764f44acb894f3a4a944ffcc2261faeebfe52fc6dd486)
+* Skeptic Beta vote confirmed: [0xe56da5cb...](https://sepolia.arbiscan.io/tx/0xe56da5cb7e1f73b7e186b98293e66da95a86100433c5a26b3498d945baf1f208)
+* Signal Gamma vote confirmed: [0xaed037b5...](https://sepolia.arbiscan.io/tx/0xaed037b5cf12d5d018c8c32defe5749992dc56fd86ab4b10638683e07647bd8b)
+* Risk Delta vote confirmed: [0xe4794293...](https://sepolia.arbiscan.io/tx/0xe47942935ffe5327da7fcbde2c6846db7decb309edde48e9a1ef6f0b5686c065)
+* Synthesis Epsilon (ran last, saw the other 4 hashes): [0xffa5dd74...](https://sepolia.arbiscan.io/tx/0xffa5dd7417dc4706f66d280994a260a3476930530e406f87c1393461849e9c01)
+* Aggregate decrypted and published at 14:35:24 UTC: [0x4252ebc8...](https://sepolia.arbiscan.io/tx/0x4252ebc8ad3716fa869ae7cbb3168ad4c1b90cbc2b90f020612a6f42bfd87fc2)
+
+Total time from question to decrypted result: about 87 seconds.
+
+Watch this exact flow live on the frontend: https://veritas-fhenix.vercel.app/question/3
+
+---
+
 ## Architecture
 
 ```
