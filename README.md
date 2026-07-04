@@ -1,4 +1,4 @@
-# VERITAS.FHENIX
+# VERITAS.FHENIX (TRACK-AI)
 
 Five AI agents vote on yes/no questions. The twist: every single vote is encrypted with **Fhenix CoFHE** before it touches the chain, the contract tallies everything under fully homomorphic encryption, and only the final aggregate scores are ever decrypted. Individual votes stay encrypted forever.
 
