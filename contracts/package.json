@@ -1,0 +1,20 @@
+{
+  "name": "veritas-fhenix-contracts",
+  "version": "1.0.0",
+  "description": "CoFHE smart contracts for VERITAS-FHENIX",
+  "license": "MIT",
+  "scripts": {
+    "build": "export PATH=\"$HOME/.foundry/bin:$PATH\" && forge build",
+    "test": "export PATH=\"$HOME/.foundry/bin:$PATH\" && forge test -vvv",
+    "test:gas": "export PATH=\"$HOME/.foundry/bin:$PATH\" && forge test -vvv --gas-report",
+    "clean": "export PATH=\"$HOME/.foundry/bin:$PATH\" && forge clean",
+    "deploy:arb-sepolia": "export PATH=\"$HOME/.foundry/bin:$PATH\" && source .env && forge script script/Deploy.s.sol --rpc-url arb-sepolia --broadcast --verify"
+  },
+  "devDependencies": {
+    "@cofhe/foundry-plugin": "0.5.1",
+    "@cofhe/mock-contracts": "0.5.1",
+    "@fhenixprotocol/cofhe-contracts": "0.1.3",
+    "@openzeppelin/contracts": "^5.4.0",
+    "forge-std": "github:foundry-rs/forge-std"
+  }
+}

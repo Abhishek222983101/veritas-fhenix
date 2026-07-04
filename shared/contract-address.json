@@ -1,0 +1,16 @@
+{
+  "network": "arbitrum-sepolia",
+  "chainId": 421614,
+  "contractAddress": "0xA214714b1e56adAa85D8359F300Bc1f3C09283e0",
+  "deployer": "0x75C6cFdEDbEb6b34e4558AF2D0aFdBF19b273B09",
+  "backend": "0x40c640a7856C58AA6A0bAD91Ac5E1f74c54bd045",
+  "agents": [
+    { "name": "Oracle Alpha", "address": "0x3762c18E92Ab1582d69234908b00D48898ae3fC3" },
+    { "name": "Skeptic Beta", "address": "0x07d470c5089aD516c89FC86Ebab42871982cb3e6" },
+    { "name": "Signal Gamma", "address": "0x54Be9E53F2a5cAbF64Ee06D1B8bD1A73678b55F8" },
+    { "name": "Risk Delta", "address": "0xA1840D3e49b2cEeB6028cF98369262B0bfe0c781" },
+    { "name": "Synthesis Epsilon", "address": "0x514c37EC2eC5e7fBf5d7d8d1895D80B531F365F9" }
+  ],
+  "deployedAt": "2026-07-04",
+  "explorer": "https://sepolia.arbiscan.io/address/0xA214714b1e56adAa85D8359F300Bc1f3C09283e0"
+}

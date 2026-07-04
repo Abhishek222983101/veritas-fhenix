@@ -1,0 +1,23 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["node_modules"]
+test = "test"
+script = "script"
+solc_version = "0.8.25"
+evm_version = "cancun"
+auto_detect_remappings = false
+code_size_limit = 100000
+gas_reports = ["VeritasOracle"]
+ffi = false
+via_ir = true
+optimizer = true
+optimizer_runs = 200
+
+[rpc_endpoints]
+eth-sepolia = "${SEPOLIA_RPC_URL}"
+arb-sepolia = "${ARBITRUM_SEPOLIA_RPC_URL}"
+base-sepolia = "${BASE_SEPOLIA_RPC_URL}"
+
+[etherscan]
+arb-sepolia = { key = "${ARBISCAN_API_KEY}", url = "https://api-sepolia.arbiscan.io/api", chain = 421614 }

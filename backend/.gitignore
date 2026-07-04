@@ -1,0 +1,25 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Runtime data (contains votes, events, may contain tx hashes)
+data/
+
+# Build output
+dist/
+
+# Agent keypairs (if any are generated locally)
+keypairs/
+
+# Logs
+*.log
+npm-debug.log*
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

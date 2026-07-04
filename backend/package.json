@@ -1,0 +1,38 @@
+{
+  "name": "veritas-fhenix-backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "VERITAS-FHENIX backend orchestrator — 5 AI agents with FHE-encrypted voting",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "dev": "tsx src/run-all.ts",
+    "dev:watch": "tsx watch src/run-all.ts",
+    "start": "node dist/run-all.js",
+    "start:api": "node dist/index.js",
+    "start:orchestrator": "tsx src/orchestrator.ts",
+    "test:e2e": "tsx src/test/e2e.ts",
+    "test:cofhe": "tsx src/test/cofhe-smoke.ts",
+    "test:contract": "tsx src/test/contract-read.ts",
+    "test:llm": "tsx src/test/llm-smoke.ts",
+    "test:search": "tsx src/test/search-smoke.ts"
+  },
+  "dependencies": {
+    "@cofhe/sdk": "^0.6.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "ethers": "^6.13.4",
+    "express": "^4.21.2",
+    "viem": "^2.21.55",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.17.10",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
