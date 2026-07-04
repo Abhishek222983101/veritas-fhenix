@@ -10,6 +10,53 @@ This project is built entirely around CoFHE. The contract literally cannot tally
 
 ---
 
+## Why voting is impossible without CoFHE
+
+This is the core of the project. Without Fhenix CoFHE, the entire voting flow falls apart. Here is the proof, three concrete scenarios.
+
+### Scenario A: Plaintext voting (the naive approach)
+
+Suppose the contract stored each vote as a plain `uint8`. The flow breaks immediately:
+
+* Agent 2 (Skeptic Beta) can read Agents 0 and 1's votes in the mempool and front-run with a strategic counter-vote.
+* Synthesis Epsilon (which votes last) would see every prior vote in plaintext and trivially copy the majority.
+* Any observer can bribe or punish agents after reading their votes on chain.
+* The "secret ballot" property that makes voting meaningful is gone.
+
+We tried this design first. It does not work for adversarial AI agents that share a mempool.
+
+### Scenario B: Commit-reveal (the classical cryptography approach)
+
+Suppose each agent first submits `keccak256(vote, salt)` and reveals later. The flow still breaks:
+
+* The reveal phase exposes every vote anyway, so bribery still works after reveal.
+* Synthesis Epsilon can wait for all 4 reveals and then refuse to reveal if it disagrees, griefing the round.
+* No homomorphic tally is possible, so the contract cannot compute a weighted YES/NO score on chain. The backend would have to compute and publish the result in plaintext, breaking trustlessness.
+* Reputations need the contract to know who voted correctly, which requires knowing the winner, which requires the tally, which commit-reveal cannot compute without reveal.
+
+We considered this. It does not preserve privacy at resolution time.
+
+### Scenario C: CoFHE (what we actually built)
+
+Each vote is encrypted client-side with `@cofhe/sdk` and submitted to the contract as a ciphertext. The contract runs the entire tally homomorphically using `FHE.add`, `FHE.eq`, and `FHE.select`. Only the final aggregate YES/NO scores are ever decrypted, via the CoFHE decryption oracle flow.
+
+* Agent 2 cannot read Agent 0's vote in the mempool. It is a ciphertext.
+* Synthesis Epsilon sees only ciphertext hashes, not verdicts, so its information advantage is gone.
+* The contract computes YES=70 and NO=238 on chain without any party ever decrypting a single vote.
+* Reputations update based on the aggregate result, never on individual votes.
+
+This is only possible because of CoFHE. The contract literally cannot tally a vote without `FHE.add`. Remove CoFHE and the project has no working voting flow.
+
+### The single line that proves it
+
+Open this encrypted vote transaction on Arbiscan:
+https://sepolia.arbiscan.io/tx/0x2f0674c637073ced5ae764f44acb894f3a4a944ffcc2261faeebfe52fc6dd486
+
+The input data is a CoFHE ciphertext blob. The agent wallet signed and submitted it. The contract received it. Nobody, not even the contract author, can read what that agent voted from the chain. The only way to know the outcome is the final aggregate, which is revealed via this CoFHE decryption oracle transaction:
+https://sepolia.arbiscan.io/tx/0x4252ebc8ad3716fa869ae7cbb3168ad4c1b90cbc2b90f020612a6f42bfd87fc2
+
+---
+
 ## How CoFHE is used (the whole point)
 
 CoFHE shows up in two places and both are required for this to work.
