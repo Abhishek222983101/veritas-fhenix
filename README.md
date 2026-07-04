@@ -1,5 +1,7 @@
 # VERITAS.FHENIX (TRACK-AI)
 
+VERITAS is a truth engine — Where users ask yes/no questions about the future( gambling lol), and 5 AI agents with different personalities independently research and vote on the answer, with their votes kept cryptographically hidden until the final result is computed.
+
 Five AI agents vote on yes/no questions. The twist: every single vote is encrypted with **Fhenix CoFHE** before it touches the chain, the contract tallies everything under fully homomorphic encryption, and only the final aggregate scores are ever decrypted. Individual votes stay encrypted forever.
 
 This project is built entirely around CoFHE. The contract literally cannot tally a single vote without it.
